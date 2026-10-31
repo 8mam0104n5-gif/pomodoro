@@ -8,8 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ポモドーロ">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="icon" id="favicon" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" id="favicon" type="image/png" href="favicon-32.png">
 <title>スケジュール式ポモドーロ</title>
 <style>
   :root { --bg:#fafaf7; --card:#fff; --text:#222; --muted:#777; --work:#d9534f; --break:#3fa66b; --long:#3b7dd8; --line:#e5e5e0; }
@@ -181,18 +181,25 @@ function announce(text) {
 // ---- ファビコン(別タブでも残り分数が見える) ----
 const fav = document.createElement('canvas'); fav.width = fav.height = 64;
 let favKey = '';
+const favImg = new Image(); favImg.src = 'icon-192.png';
+favImg.onload = () => { favKey = ''; tick(); };
 function setFavicon(text, color) {
   if (favKey === text + color) return;
   favKey = text + color;
+  if (!text) { $('favicon').href = 'favicon-32.png'; return; }
   const c = fav.getContext('2d');
   c.clearRect(0, 0, 64, 64);
-  c.fillStyle = color;
-  c.beginPath(); c.roundRect(0, 0, 64, 64, 14); c.fill();
+  // アイコン画像の右下に残り分数のバッジを重ねる(画像が使えない環境では色タイルのみ)
+  const hasImg = favImg.complete && favImg.naturalWidth > 0;
+  if (hasImg) c.drawImage(favImg, 0, 0, 64, 64);
+  else { c.fillStyle = color; c.beginPath(); c.roundRect(0, 0, 64, 64, 14); c.fill(); }
+  c.fillStyle = color; c.strokeStyle = '#fff'; c.lineWidth = 3;
+  c.beginPath(); c.arc(42, 42, 22, 0, Math.PI * 2); c.fill(); c.stroke();
   c.fillStyle = '#fff';
-  c.font = `bold ${text.length > 2 ? 34 : 44}px -apple-system, sans-serif`;
+  c.font = `bold ${text.length > 2 ? 20 : 28}px -apple-system, sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(text, 32, 36);
-  $('favicon').href = fav.toDataURL('image/png');
+  c.fillText(text, 42, 44);
+  try { $('favicon').href = fav.toDataURL('image/png'); } catch { $('favicon').href = 'favicon-32.png'; }
 }
 
 // ---- フローティング小窓(Document Picture-in-Picture) ----
@@ -256,7 +263,7 @@ function tick() {
     $('sub').textContent = sub;
     $('startBtn').textContent = '今すぐ開始';
     document.title = 'スケジュール式ポモドーロ';
-    setFavicon('P', HEX.idle);
+    setFavicon('', HEX.idle);
     renderPip('待機中', fmt(WORK * 60000), sub, HEX.idle);
     return;
   }
